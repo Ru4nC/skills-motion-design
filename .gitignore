@@ -1,0 +1,31 @@
+# Rascunhos internos de agentes e arquivos arquivados
+.scratch/
+archive/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Saídas e testes locais de renderização
+*.webm
+*.mp4
+*.mkv
+*.mov
+output_*.png
+test_*.png
+*.log
+
+# Ambientes de desenvolvimento e IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

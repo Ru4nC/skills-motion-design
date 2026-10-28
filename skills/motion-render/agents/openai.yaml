@@ -1,0 +1,2 @@
+display_name: Motion Render
+description: Streaming de buffers RGBA via pipe para FFmpeg gerando vídeos transparentes (.webm VP9 yuva420p) e stills.

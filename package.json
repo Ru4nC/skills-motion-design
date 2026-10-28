@@ -1,0 +1,10 @@
+{
+	"name": "skills-motion-design",
+	"version": "1.0.0",
+	"description": "Python-First Motion Design Agent Skills",
+	"license": "MIT",
+	"scripts": {
+		"validate": "python scripts/validate_skills.py",
+		"sync": "python scripts/sync_readme.py"
+	}
+}
