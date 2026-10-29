@@ -1,27 +1,84 @@
 ---
 name: motion-render
-description: Renderização em memória e streaming contínuo para FFmpeg gerando vídeos transparentes (.webm VP9 yuva420p) e stills.
-version: 1.0.0
+description: Renderização em memória e streaming contínuo para FFmpeg gerando cenas de tela cheia (.mp4 H.264) ou overlays transparentes (.webm VP9 yuva420p).
+version: 1.1.0
 ---
 
 # Renderização em Memória e Streaming FFmpeg
 
 Este documento fornece as diretrizes e códigos de referência para exportação de animações gráficas de alta performance sem gravação de arquivos temporários em disco, utilizando o binário do FFmpeg através de pipes padrão (`stdin`).
 
-## 1. Streaming Direto via Pipe Stdin
+O motor suporta dois modos fundamentais de entrega visual:
+1. **Cenas de Tela Cheia 100% Preenchidas (Full-Screen Standalone Scenes)**: Telas completas (infográficos explicativos, diagramas conceituais, title cards, vinhetas de capítulo) exportadas diretamente como `.mp4` (H.264 `yuv420p`) para compor a trilha principal de vídeo.
+2. **Overlays Transparentes com Canal Alfa (Alpha Layer Overlays)**: Elementos flutuantes (telemetria HUD, estatísticas, grifos e lower thirds) exportados como `.webm` (VP9 `yuva420p`) para sobreposição sobre b-roll ou filmagens reais.
 
-Em vez de gravar milhares de arquivos PNG intermediários em disco (o que consome I/O, gera concorrência de disco e desacelera o pipeline), os bytes brutos (`rawvideo`) de cada quadro gerado pelo Pillow são enviados diretamente para a entrada padrão do processo FFmpeg.
+---
 
-A velocidade típica dessa abordagem é de aproximadamente **1.5s por clipe animado de 4 segundos**.
+## 1. Modo Full-Screen: Cenas 100% Preenchidas (.mp4 H.264)
 
-### Implementação de Referência em Python
+Para animações que ocupam toda a tela (1920x1080 ou 1080x1920) com fundo sólido, gradientes procedurais ou infografia densa:
 
 ```python
 import subprocess
-import numpy as np
 from PIL import Image
 
-def render_animation_to_webm(
+def render_fullscreen_scene_to_mp4(
+    output_path: str,
+    render_frame_fn,
+    width: int = 1920,
+    height: int = 1080,
+    fps: int = 30,
+    duration_sec: float = 5.0,
+    ffmpeg_bin: str = "ffmpeg",
+) -> str:
+    """
+    Renderiza uma cena 100% preenchida diretamente como vídeo MP4 H.264 broadcast-quality.
+    Velocidade: ~1.2s para 5 segundos de animação em 1080p.
+    """
+    total_frames = int(round(duration_sec * fps))
+
+    cmd = [
+        ffmpeg_bin,
+        "-y",
+        "-f", "rawvideo",
+        "-vcodec", "rawvideo",
+        "-s", f"{width}x{height}",
+        "-pix_fmt", "rgba",
+        "-r", str(fps),
+        "-i", "pipe:0",
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-preset", "fast",
+        "-crf", "18",
+        "-an",
+        output_path,
+    ]
+
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    try:
+        for f in range(total_frames):
+            t = f / float(fps)
+            frame_img = render_frame_fn(t=t, duration=duration_sec, width=width, height=height)
+            proc.stdin.write(frame_img.tobytes("raw", "RGBA"))
+            
+        proc.stdin.close()
+        proc.wait()
+    except Exception as e:
+        proc.kill()
+        raise RuntimeError(f"Erro na renderização full-screen: {e}")
+
+    return output_path
+```
+
+---
+
+## 2. Modo Overlay: Clipes Transparentes com Canal Alfa (.webm VP9)
+
+Quando a animação precisa sobrepor um vídeo de fundo, utilizamos o codec VP9 com formato de pixel `yuva420p`:
+
+```python
+def render_transparent_overlay_to_webm(
     output_path: str,
     render_frame_fn,
     width: int = 1920,
@@ -30,9 +87,11 @@ def render_animation_to_webm(
     duration_sec: float = 4.0,
     ffmpeg_bin: str = "ffmpeg",
 ) -> str:
+    """
+    Renderiza um overlay com fundo transparente (canal alfa real) via pipe direto para o FFmpeg.
+    """
     total_frames = int(round(duration_sec * fps))
 
-    # Comando FFmpeg otimizado para canal alfa real e alta performance
     cmd = [
         ffmpeg_bin,
         "-y",
@@ -59,36 +118,27 @@ def render_animation_to_webm(
         for f in range(total_frames):
             t = f / float(fps)
             frame_img = render_frame_fn(t=t, duration=duration_sec, width=width, height=height)
-            
-            # Converte a imagem PIL diretamente em buffer de bytes RGBA
             proc.stdin.write(frame_img.tobytes("raw", "RGBA"))
             
         proc.stdin.close()
         proc.wait()
     except Exception as e:
         proc.kill()
-        raise RuntimeError(f"Erro durante renderização de motion: {e}")
+        raise RuntimeError(f"Erro na renderização transparente: {e}")
 
     return output_path
 ```
 
-## 2. Requisitos de Canal Alfa Real (VP9 yuva420p)
+### Requisitos do Canal Alfa Real
+- **Formato de Pixel**: `yuva420p` (o `a` designa o plano alfa de transparência).
+- **Flag Obrigatória**: `-auto-alt-ref 0` (impede quadros de referência alternativos ocultos que corrompem o canal alfa).
+- **Pós-Produção Externa**: Para DaVinci Resolve ou Premiere, substitua por Apple ProRes 4444 (`-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le output.mov`).
 
-Para que o clipe `.webm` se sobreponha perfeitamente sobre a trilha base sem gerar artefatos de fundo preto:
-- **Codec**: `libvpx-vp9`
-- **Formato de Pixel**: `yuva420p` (o `a` designa o plano de canal alfa real de 8 bits).
-- **Flag Obrigatória**: `-auto-alt-ref 0`. Esta flag impede que o codec VP9 gere quadros de referência alternativos ocultos que corrompem a interpretação de transparência em reprodutores e filtros de composição.
+---
 
-### Alternativa para Pós-Produção (Apple ProRes 4444)
-Se o clipe precisar ser entregue para suítes de edição externas (DaVinci Resolve / Premiere Pro):
-```bash
-ffmpeg -f rawvideo -pix_fmt rgba -s 1920x1080 -r 30 -i pipe:0 \
-  -c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le output.mov
-```
+## 3. Renderização Determinística de Stills (Inspeção e Miniaturas)
 
-## 3. Renderização Determinística de Stills (Inspeção de Frames)
-
-Para capturar um único quadro representativo (ex.: $t = 1.5s$) com transparência em disco para QA ou preview rápido:
+Para capturar um único quadro representativo (ex.: $t = 1.5s$) tanto de uma cena cheia quanto de um overlay com transparência:
 
 ```python
 def export_still_frame(

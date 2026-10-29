@@ -4,15 +4,15 @@
 
 <p align="center">
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+"></a>
-  <a href="https://ffmpeg.org/"><img src="https://img.shields.io/badge/FFmpeg-VP9%20%7C%20yuva420p-007808?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="FFmpeg"></a>
+  <a href="https://ffmpeg.org/"><img src="https://img.shields.io/badge/FFmpeg-H.264%20%7C%20VP9%20yuva420p-007808?style=for-the-badge&logo=ffmpeg&logoColor=white" alt="FFmpeg"></a>
   <img src="https://img.shields.io/badge/Architecture-Python--First-success?style=for-the-badge" alt="Python First">
-  <img src="https://img.shields.io/badge/Headless%20Browsers-0%25%20(None)-blueviolet?style=for-the-badge" alt="No Browsers">
+  <img src="https://img.shields.io/badge/Full--Screen%20%2B%20Alpha%20Overlays-100%25-blueviolet?style=for-the-badge" alt="Modes">
   <img src="https://img.shields.io/badge/Render%20Speed-~1.5s%20%2F%20clip-orange?style=for-the-badge" alt="Speed">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License MIT"></a>
 </p>
 
 > **Coleção oficial de Agent Skills de Motion Design de alta performance em Python puro.**
-> Proporcione aos seus agentes de IA (Claude Code, Antigravity, Cursor, Codex) a capacidade de conceber, animar, renderizar e compor Motion Graphics com canal alfa real sem depender de Node.js, Chromium, Puppeteer ou gravação de arquivos temporários em disco.
+> Proporcione aos seus agentes de IA (Claude Code, Antigravity, Cursor, Codex) a capacidade de conceber, animar, renderizar e compor **tanto cenas completas de tela cheia (100% preenchidas em `.mp4`) quanto overlays transparentes com canal alfa real (`.webm`)**, sem depender de Node.js, Chromium, Puppeteer ou arquivos temporários em disco.
 
 ---
 
@@ -20,7 +20,10 @@
 
 A maioria das soluções de animação programática depende de ecossistemas web pesados (React, Node.js, navegadores headless via Puppeteer/Chromium), o que gera latência de inicialização, consumo excessivo de RAM e dependências frágeis em pipelines de produção.
 
-Esta suíte foi construída sob o paradigma **Python-First**: os quadros são sintetizados em milissegundos na memória com **Pillow + NumPy** e transmitidos diretamente via pipe (`stdin`) para o binário do **FFmpeg**, alcançando uma velocidade incomparável de **~1.5 segundos por clipe animado** com transparência real (`.webm` VP9 `yuva420p`).
+Esta suíte foi construída sob o paradigma **Python-First**: os quadros são sintetizados em milissegundos na memória com **Pillow + NumPy** e transmitidos diretamente via pipe (`stdin`) para o binário do **FFmpeg**, alcançando uma velocidade incomparável de **~1.2s a ~1.5 segundos por clipe animado** em dois modos:
+
+1. 📺 **Cenas Full-Screen (100% Preenchidas)**: Telas completas (infográficos explicativos densos, vinhetas de título, diagramas conceituais com gradientes escuros procedurais) codificadas em `.mp4` (H.264 `yuv420p`) para compor diretamente a trilha de corte principal.
+2. 🎭 **Overlays com Canal Alfa Real**: Elementos flutuantes (telemetria HUD, cartões de dados, grifos manuais e lower thirds) codificados em `.webm` (VP9 `yuva420p` com `-auto-alt-ref 0`) para sobreposição translúcida perfeita sobre b-roll.
 
 ```
  ┌─────────────────────────────────────────────────────────┐
@@ -30,6 +33,7 @@ Esta suíte foi construída sob o paradigma **Python-First**: os quadros são si
                               ▼
  ┌─────────────────────────────────────────────────────────┐
  │          MOTOR GRÁFICO EM MEMÓRIA (Pillow + NumPy)      │
+ │   • Cenas Full-Screen com gradientes escuros contínuos  │
  │   • Marca-texto orgânico senoidal (Rough Notation)      │
  │   • Motion blur direcional derivativo cúbico            │
  │   • Osciloscópios harmônicos & retículas cartográficas  │
@@ -38,13 +42,15 @@ Esta suíte foi construída sob o paradigma **Python-First**: os quadros são si
                               │ bytes rawvideo RGBA (stdin pipe)
                               ▼
  ┌─────────────────────────────────────────────────────────┐
- │       FFMPEG ENCODER (libvpx-vp9, yuva420p, alpha)      │
- └────────────────────────────┬────────────────────────────┘
-                              │ vídeo transparente .webm (~1.5s)
+ │            FFMPEG STREAMING ENCODER EM MEMÓRIA          │
+ ├────────────────────────────┬────────────────────────────┤
+ │ Modo Full-Screen (.mp4)    │ Modo Overlay Alfa (.webm)  │
+ │ libx264 -pix_fmt yuv420p   │ libvpx-vp9 yuva420p alpha  │
+ └────────────────────────────┴────────────────────────────┘
+                              │ clipe gerado em ~1.5s
                               ▼
  ┌─────────────────────────────────────────────────────────┐
  │   COMPOSIÇÃO NA TIMELINE (filter_complex + PTS Shift)   │
- │         setpts=PTS-STARTPTS+{t_start}/TB                │
  └─────────────────────────────────────────────────────────┘
 ```
 
@@ -55,7 +61,7 @@ Esta suíte foi construída sob o paradigma **Python-First**: os quadros são si
 | Recurso | Detalhes Técnicos |
 |---|---|
 | 🏎️ **Streaming em Memória** | Zero arquivos PNG intermediários em disco; fluxo contínuo de bytes RGBA para o FFmpeg. |
-| 🎭 **Canal Alfa Real** | Codificação VP9 em `yuva420p` com `-auto-alt-ref 0` para sobreposição translúcida perfeita. |
+| 📺 **Suporte Full-Screen & Alfa** | Flexibilidade total: exporta tanto `.mp4` opaco (100% preenchido) quanto `.webm` com canal alfa real. |
 | ⏱️ **Sincronia com PTS Shift** | Deslocamento de timestamp (`setpts=PTS-STARTPTS+{t_start}/TB`) eliminando congelamento de quadros. |
 | 📐 **Safe Area Contextual** | Margem perimetral obrigatória de 10% em 1080p e zona restrita de 12% a 38% em Shorts (9:16). |
 | 🎨 **Paleta Obsidian & Amber** | Contraste de alto impacto cinemático com base `#0A0B0E`, acentos `#F59E0B`, ciano elétrico e carmesim. |
@@ -73,10 +79,10 @@ Esta suíte foi construída sob o paradigma **Python-First**: os quadros são si
 | **[`/motion-create`](./skills/motion-create/SKILL.md)** | Scaffolding e estrutura recomendada para criação de novos módulos de Motion Design em Python. | `Crie o scaffolding estrutural para um novo módulo de infografia animada.` |
 | **[`/motion-interactivity`](./skills/motion-interactivity/SKILL.md)** | Parametrização declarativa via JSON e controle temporal de keyframes para animações em Python. | `Defina o esquema declarativo JSON para parametrização dinâmica de keyframes.` |
 | **[`/motion-maps`](./skills/motion-maps/SKILL.md)** | Animações de mapas cinemáticos, retículas polares HUD, coordenadas e radares pulsantes em Python. | `Desenhe uma retícula cartográfica HUD com radar pulsante em coordenadas GPS.` |
-| **[`/motion-markup`](./skills/motion-markup/SKILL.md)** | Primitivas de renderização gráfica em memória (Pillow + NumPy), tipografia, efeitos visuais e animações matemáticas em Python. | `Crie um card de telemetria com grifo orgânico Rough Notation e contador com easeOutExpo.` |
+| **[`/motion-markup`](./skills/motion-markup/SKILL.md)** | Primitivas de renderização gráfica em memória (Pillow + NumPy), tipografia, efeitos visuais e animações matemáticas em Python. | `Crie um infográfico de tela cheia com gradiente espacial ou um card de telemetria com Rough Notation.` |
 | **[`/motion-multimedia`](./skills/motion-multimedia/SKILL.md)** | Extração de metadados de vídeo e áudio (dimensões, fps, duração, canais) usando FFprobe e Python puro. | `Inspecione dimensões e duração exata de áudio usando FFprobe em Python puro.` |
 | **[`/motion-notebooks`](./skills/motion-notebooks/SKILL.md)** | Prototipagem, renderização e inspeção de animações com canal alfa em Google Colab e Jupyter Notebooks. | `Configure uma célula no Google Colab com InlineAlphaPreview para validar a transparência do vídeo.` |
-| **[`/motion-render`](./skills/motion-render/SKILL.md)** | Renderização em memória e streaming contínuo para FFmpeg gerando vídeos transparentes (.webm VP9 yuva420p) e stills. | `Renderize a animação via streaming direto para o FFmpeg em .webm VP9 yuva420p.` |
+| **[`/motion-render`](./skills/motion-render/SKILL.md)** | Renderização em memória e streaming contínuo para FFmpeg gerando cenas de tela cheia (.mp4 H.264) ou overlays transparentes (.webm VP9 yuva420p). | `Renderize uma cena full-screen em .mp4 H.264 ou um overlay transparente em .webm VP9 yuva420p.` |
 | **[`/motion-studio`](./skills/motion-studio/SKILL.md)** | Paridade visual entre o motor Python e Canvas 2D em navegador, inspeção offline com ffplay e exportação de stills. | `Implemente a função window.renderAutomationFrame no Canvas 2D garantindo paridade matemática com o Pillow.` |
 
 ---
@@ -104,39 +110,49 @@ python scripts/sync_readme.py
 
 ---
 
-## 💻 Exemplo Rápido: Renderizando um Overlay com Canal Alfa
+## 💻 Exemplo Rápido: Cena Full-Screen e Overlay Transparente
 
 ```python
 import subprocess
 from PIL import Image, ImageDraw
+import numpy as np
 
-# 1. Define o gerador de quadros em memória
-def render_frame(t: float, duration: float, width=1920, height=1080) -> Image.Image:
-    img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+# 1. Define gerador de quadros (com opção de fundo 100% preenchido)
+def render_frame(t: float, duration: float, width=1920, height=1080, fullscreen=True) -> Image.Image:
+    if fullscreen:
+        # Fundo gradiente cinemático 100% preenchido
+        t_vals = np.linspace(0, 1, height)[:, None]
+        r = (17 * (1 - t_vals) + 10 * t_vals).astype(np.uint8)
+        g = (24 * (1 - t_vals) + 11 * t_vals).astype(np.uint8)
+        b = (39 * (1 - t_vals) + 14 * t_vals).astype(np.uint8)
+        a = np.full((height, 1), 255, dtype=np.uint8)
+        img = Image.fromarray(np.repeat(np.concatenate([r, g, b, a], axis=1)[:, None, :], width, axis=1), 'RGBA')
+    else:
+        # Fundo transparente para overlay
+        img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+
     draw = ImageDraw.Draw(img, 'RGBA')
-    
-    # Animação suave com easeOutExpo: progress = 1.0 - 2^(-10 * t)
     p = min(1.0, max(0.0, t / 0.8))
-    ease = 1.0 if p >= 0.999 else (1.0 - pow(2.0, -10.0 * p))
+    ease = 1.0 if p >= 0.999 else (1.0 - pow(2.0, -10.0 * p))  # easeOutExpo
     
     card_w, card_h = int(600 * ease), 140
-    draw.rounded_rectangle([100, 100, 100 + card_w, 100 + card_h], radius=12, fill=(10, 11, 14, 235))
-    draw.text((130, 140), 'TELEMETRIA ATIVA', fill=(245, 158, 11, int(255 * ease)))
+    draw.rounded_rectangle([100, 100, 100 + card_w, 100 + card_h], radius=12, fill=(17, 22, 37, 240))
+    draw.text((130, 140), 'INFOGRAFIA CINEMÁTICA', fill=(245, 158, 11, int(255 * ease)))
     return img
 
-# 2. Faz o streaming direto via pipe para o FFmpeg em ~1.5s
+# 2. Streaming direto para FFmpeg gerando MP4 Full-Screen em ~1.2s
 cmd = [
     'ffmpeg', '-y', '-f', 'rawvideo', '-s', '1920x1080', '-pix_fmt', 'rgba',
-    '-r', '30', '-i', 'pipe:0', '-c:v', 'libvpx-vp9', '-pix_fmt', 'yuva420p',
-    '-auto-alt-ref', '0', '-b:v', '0', '-crf', '28', '-deadline', 'realtime', 'overlay.webm'
+    '-r', '30', '-i', 'pipe:0', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
+    '-preset', 'fast', '-crf', '18', 'cena_fullscreen.mp4'
 ]
 proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-for f in range(30 * 4):  # 4 segundos a 30 fps
-    frame = render_frame(t=f / 30.0, duration=4.0)
+for f in range(30 * 4):
+    frame = render_frame(t=f / 30.0, duration=4.0, fullscreen=True)
     proc.stdin.write(frame.tobytes('raw', 'RGBA'))
 proc.stdin.close()
 proc.wait()
-print('Overlay .webm transparente gerado com sucesso!')
+print('Cena full-screen .mp4 gerada com sucesso!')
 ```
 
 ---
