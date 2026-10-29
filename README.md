@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://colab.research.google.com/github/seu-usuario/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+  <a href="https://colab.research.google.com/github/Ru4nC/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
 </p>
 
 > **Coleção oficial de Agent Skills de Motion Design de alta performance em Python puro.**
@@ -28,7 +28,7 @@ Abaixo estão exemplos reais gerados em milissegundos pelo motor Python (Pillow 
 |:---:|:---:|:---:|
 | <img src="./assets/demo/fullscreen_explainer.gif" width="280" alt="Full-Screen Explainer" /><br><sub><b>.mp4 H.264</b> • Gradiente procedural & roll-up numérico</sub> | <img src="./assets/demo/transparent_hud_overlay.gif" width="280" alt="Transparent HUD Overlay" /><br><sub><b>.webm VP9</b> • Fundo xadrez comprovando canal alfa</sub> | <img src="./assets/demo/dossier_rough_notation.gif" width="280" alt="Dossier Rough Notation" /><br><sub><b>Rough Notation</b> • Perturbação senoidal com NumPy</sub> |
 
-💡 **Experimente agora mesmo sem instalar nada localmente:** Abra o [**Notebook Interativo no Google Colab**](https://colab.research.google.com/github/seu-usuario/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb) para renderizar esses e outros exemplos diretamente no seu navegador.
+💡 **Experimente agora mesmo sem instalar nada localmente:** Abra o [**Notebook Interativo no Google Colab**](https://colab.research.google.com/github/Ru4nC/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb) para renderizar esses e outros exemplos diretamente no seu navegador.
 
 ---
 
@@ -110,7 +110,7 @@ Para que seu agente carregue automaticamente todas as skills, adicione este repo
 
 ```bash
 # Clonar o repositório na pasta de skills do seu projeto
-git clone https://github.com/<seu-usuario>/skills-motion-design.git .agents/skills/motion-design
+git clone https://github.com/Ru4nC/skills-motion-design.git .agents/skills/motion-design
 ```
 
 ### 2. Validação e Sincronização Local
