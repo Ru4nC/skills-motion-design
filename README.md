@@ -11,8 +11,24 @@
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License MIT"></a>
 </p>
 
+<p align="center">
+  <a href="https://colab.research.google.com/github/seu-usuario/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
+</p>
+
 > **Coleção oficial de Agent Skills de Motion Design de alta performance em Python puro.**
 > Proporcione aos seus agentes de IA (Claude Code, Antigravity, Cursor, Codex) a capacidade de conceber, animar, renderizar e compor **tanto cenas completas de tela cheia (100% preenchidas em `.mp4`) quanto overlays transparentes com canal alfa real (`.webm`)**, sem depender de Node.js, Chromium, Puppeteer ou arquivos temporários em disco.
+
+---
+
+## ✨ Galeria de Demonstração (Showcase)
+
+Abaixo estão exemplos reais gerados em milissegundos pelo motor Python (Pillow + NumPy + FFmpeg):
+
+| 📺 Cena Full-Screen (100% Preenchida) | 🎭 Overlay Transparente (Canal Alfa Real) | 📑 Dossiê Investigativo (Rough Notation) |
+|:---:|:---:|:---:|
+| <img src="./assets/demo/fullscreen_explainer.gif" width="280" alt="Full-Screen Explainer" /><br><sub><b>.mp4 H.264</b> • Gradiente procedural & roll-up numérico</sub> | <img src="./assets/demo/transparent_hud_overlay.gif" width="280" alt="Transparent HUD Overlay" /><br><sub><b>.webm VP9</b> • Fundo xadrez comprovando canal alfa</sub> | <img src="./assets/demo/dossier_rough_notation.gif" width="280" alt="Dossier Rough Notation" /><br><sub><b>Rough Notation</b> • Perturbação senoidal com NumPy</sub> |
+
+💡 **Experimente agora mesmo sem instalar nada localmente:** Abra o [**Notebook Interativo no Google Colab**](https://colab.research.google.com/github/seu-usuario/skills-motion-design/blob/main/examples/motion_design_showcase.ipynb) para renderizar esses e outros exemplos diretamente no seu navegador.
 
 ---
 
@@ -110,50 +126,9 @@ python scripts/sync_readme.py
 
 ---
 
-## 💻 Exemplo Rápido: Cena Full-Screen e Overlay Transparente
+## 🧠 Integração com Google NotebookLM
 
-```python
-import subprocess
-from PIL import Image, ImageDraw
-import numpy as np
-
-# 1. Define gerador de quadros (com opção de fundo 100% preenchido)
-def render_frame(t: float, duration: float, width=1920, height=1080, fullscreen=True) -> Image.Image:
-    if fullscreen:
-        # Fundo gradiente cinemático 100% preenchido
-        t_vals = np.linspace(0, 1, height)[:, None]
-        r = (17 * (1 - t_vals) + 10 * t_vals).astype(np.uint8)
-        g = (24 * (1 - t_vals) + 11 * t_vals).astype(np.uint8)
-        b = (39 * (1 - t_vals) + 14 * t_vals).astype(np.uint8)
-        a = np.full((height, 1), 255, dtype=np.uint8)
-        img = Image.fromarray(np.repeat(np.concatenate([r, g, b, a], axis=1)[:, None, :], width, axis=1), 'RGBA')
-    else:
-        # Fundo transparente para overlay
-        img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-
-    draw = ImageDraw.Draw(img, 'RGBA')
-    p = min(1.0, max(0.0, t / 0.8))
-    ease = 1.0 if p >= 0.999 else (1.0 - pow(2.0, -10.0 * p))  # easeOutExpo
-    
-    card_w, card_h = int(600 * ease), 140
-    draw.rounded_rectangle([100, 100, 100 + card_w, 100 + card_h], radius=12, fill=(17, 22, 37, 240))
-    draw.text((130, 140), 'INFOGRAFIA CINEMÁTICA', fill=(245, 158, 11, int(255 * ease)))
-    return img
-
-# 2. Streaming direto para FFmpeg gerando MP4 Full-Screen em ~1.2s
-cmd = [
-    'ffmpeg', '-y', '-f', 'rawvideo', '-s', '1920x1080', '-pix_fmt', 'rgba',
-    '-r', '30', '-i', 'pipe:0', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
-    '-preset', 'fast', '-crf', '18', 'cena_fullscreen.mp4'
-]
-proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-for f in range(30 * 4):
-    frame = render_frame(t=f / 30.0, duration=4.0, fullscreen=True)
-    proc.stdin.write(frame.tobytes('raw', 'RGBA'))
-proc.stdin.close()
-proc.wait()
-print('Cena full-screen .mp4 gerada com sucesso!')
-```
+Se você utiliza o **Google NotebookLM** para estudos, pesquisas ou geração de áudio explicativo, disponibilizamos uma fonte estruturada consolidada em [`docs/notebooklm_source.md`](./docs/notebooklm_source.md), pronta para importação direta.
 
 ---
 
